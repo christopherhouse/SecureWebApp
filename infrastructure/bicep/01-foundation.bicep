@@ -4,8 +4,7 @@ param vnetName string
 param workloadName string
 param environmentSuffix string
 param logAnalyticsRetentionInDays int
-
-param buildId string = format('{0:yyyy-MM-dd-HH-mm-ss}', utcNow())
+param buildId string = substring(newGuid(), 0, 9)
 
 @export()
 type subnetConfigurationType = {
@@ -115,12 +114,15 @@ module appGwSubnet './modules/virtualNetwork/subnet.bicep' = {
   ]
 }
 
-module kv './modules/keyVault/keyVault.bicep' = {
+module kv './modules/keyVault/privateKeyVault.bicep' = {
   name: keyVaultDeploymentName
   params: {
-    keyVaultName: keyVaultName
     location: location
-    logAnalyticsWorkspaceResourceId: laws.outputs.id
+    buildId: buildId
+    keyVaultName: keyVaultName
+    logAnalyticsWorkspaceResourceId: laws.outputs.id 
+    vnetName: vnetName
+    servicesSubnetResourceId: servicesSubnet.outputs.subnetId
   }
 }
 
