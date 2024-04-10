@@ -4,7 +4,7 @@ param vnetName string
 param workloadName string
 param environmentSuffix string
 param logAnalyticsRetentionInDays int
-param buildId string = substring(newGuid(), 0, 9)
+param buildId string = substring(newGuid(), 0, 8)
 
 @export()
 type subnetConfigurationType = {
