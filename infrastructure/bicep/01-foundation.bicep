@@ -32,8 +32,14 @@ var appGwSubnetDeploymentName = 'appGw-subnet-${buildId}'
 var defaultNsgName = '${workloadName}-${environmentSuffix}-nsg'
 var defaultNsgDeploymentName = '${defaultNsgName}-${buildId}'
 
-var logAnalyticsWorkspaceName = '${workloadName}-${environmentSuffix}-nsg'
+// Log Analytics
+var logAnalyticsWorkspaceName = '${workloadName}-${environmentSuffix}-laws'
 var logAnalyticsDeploymentName = '${logAnalyticsWorkspaceName}-${buildId}'
+
+// Key Vault
+var keyVaultName = '${workloadName}-${environmentSuffix}-kv'
+var keyVaultDeploymentName = '${keyVaultName}-${buildId}'
+
 
 module laws './modules/logAnalytics/logAnalyticsWorkspace.bicep' = {
   name: logAnalyticsDeploymentName
@@ -107,6 +113,15 @@ module appGwSubnet './modules/virtualNetwork/subnet.bicep' = {
   dependsOn: [
     servicesSubnet
   ]
+}
+
+module kv './modules/keyVault/keyVault.bicep' = {
+  name: keyVaultDeploymentName
+  params: {
+    keyVaultName: keyVaultName
+    location: location
+    logAnalyticsWorkspaceResourceId: laws.outputs.id
+  }
 }
 
 output webAppSubnetId string = webAppSubnet.outputs.subnetId
