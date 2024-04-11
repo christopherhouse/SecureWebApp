@@ -1,6 +1,8 @@
 param location string = resourceGroup().location
 param workloadName string
 param environmentSuffix string
+param logAnalyticsWorkspaceName string
+param keyVaultName string
 param vnetName string
 param webSubnetName string
 param servicesSubnetName string
@@ -14,6 +16,16 @@ param buildId string = substring(newGuid(), 0, 8)
 var appServicePlanName = '${workloadName}-${environmentSuffix}-asp'
 var webAppName = '${workloadName}-${environmentSuffix}-appsvc'
 var webAppDeploymentName = '${webAppName}-private-${buildId}'
+
+resource laws 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {
+  name: logAnalyticsWorkspaceName
+  scope: resourceGroup()
+}
+
+resource kv 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
+  name: keyVaultName
+  scope: resourceGroup()
+}
 
 resource vnet 'Microsoft.Network/virtualNetworks@2023-09-01' existing = {
   name: vnetName
@@ -42,5 +54,7 @@ module webApp './modules/appService/privateWebApp.bicep' = {
     webAppPrivateLinkSubnetId: servicesSubnet.id
     webAppVnetIntegrationSubnetId: webSubnet.id
     enableZoneRedundancy: enableZoneRedundancy
+    logAnalyticsWorkspaceId: laws.id
+    keyVaultResourceId: kv.id
   }
 }

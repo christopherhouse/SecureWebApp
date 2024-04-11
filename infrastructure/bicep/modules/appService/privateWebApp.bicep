@@ -7,6 +7,8 @@ param enableZoneRedundancy bool = false
 param vnetResourceId string
 param webAppPrivateLinkSubnetId string
 param webAppVnetIntegrationSubnetId string
+param logAnalyticsWorkspaceId string
+param keyVaultResourceId string
 param buildId string
 
 var appServicePlanDeploymentName = '${appServicePlanName}-${buildId}'
@@ -18,6 +20,9 @@ var dnsZoneDeploymentName = '${dnsZoneName}-${buildId}'
 var peName = '${webAppName}-pe'
 var peDeploymentName = '${peName}-${buildId}'
 
+var uamiName = '${webAppName}-uami'
+var uamiDeploymentName = '${uamiName}-${buildId}'
+
 module asp './appServicePlan.bicep' = {
   name: appServicePlanDeploymentName
   params: {
@@ -28,6 +33,14 @@ module asp './appServicePlan.bicep' = {
   }
 }
 
+module uami '../managedIdentity/userAssignedManagedIdentity.bicep' = {
+  name: uamiDeploymentName
+  params: {
+    location: location
+    managedIdentityName: uamiName
+  }
+}
+
 module webApp './webApp.bicep' = {
   name: webAppDeploymentName
   params: {
@@ -35,6 +48,9 @@ module webApp './webApp.bicep' = {
     location: location
     webAppName: webAppName
     vnetIntegrationSubnetId: webAppVnetIntegrationSubnetId
+    logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
+    userAssignedManagedIdentityResourceId: uami.outputs.id
+    keyVaultResourceId: keyVaultResourceId
   }
 }
 
