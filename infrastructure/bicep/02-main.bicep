@@ -12,6 +12,7 @@ param enableZoneRedundancy bool = false
 param appServicePlanSku string
 param buildId string = substring(newGuid(), 0, 8)
 
+// App Insights
 var appInsightsName = '${workloadName}-${environmentSuffix}-ai'
 var appInsightsDeploymentName = '${appInsightsName}-${buildId}'
 
@@ -19,6 +20,10 @@ var appInsightsDeploymentName = '${appInsightsName}-${buildId}'
 var appServicePlanName = '${workloadName}-${environmentSuffix}-asp'
 var webAppName = '${workloadName}-${environmentSuffix}-appsvc'
 var webAppDeploymentName = '${webAppName}-private-${buildId}'
+
+// App Configuration
+var appConfigName = '${workloadName}-${environmentSuffix}-appconfig'
+var appConfigDeploymentName = '${appConfigName}-${buildId}'
 
 resource laws 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {
   name: logAnalyticsWorkspaceName
@@ -53,6 +58,17 @@ module appInsights './modules/applicationInsights/applicationInsights.bicep' = {
     buildId: buildId
     keyVaultName: keyVaultName
     logAnalyticsWorkspaceId: laws.id
+  }
+}
+
+module appConfig './modules/appConfiguration/configurationStore.bicep' = {
+  name: appConfigDeploymentName
+  params: {
+    location: location
+    appConfigName: appConfigName
+    keyVaultName: keyVaultName
+    logAnalyticsWorkspaceId: laws.id
+    buildId: buildId
   }
 }
 
