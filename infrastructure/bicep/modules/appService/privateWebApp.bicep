@@ -7,7 +7,12 @@ param enableZoneRedundancy bool = false
 param vnetResourceId string
 param webAppPrivateLinkSubnetId string
 param webAppVnetIntegrationSubnetId string
+param logAnalyticsWorkspaceId string
+param keyVaultName string
+param appInsightsConnectionStringSecretUri string
 param buildId string
+
+var keyVaultSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'
 
 var appServicePlanDeploymentName = '${appServicePlanName}-${buildId}'
 var webAppDeploymentName = '${webAppName}-${buildId}'
@@ -17,6 +22,14 @@ var dnsZoneDeploymentName = '${dnsZoneName}-${buildId}'
 
 var peName = '${webAppName}-pe'
 var peDeploymentName = '${peName}-${buildId}'
+
+var uamiName = '${webAppName}-uami'
+
+resource kv 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
+  name: keyVaultName
+  scope: resourceGroup()
+}
+
 
 module asp './appServicePlan.bicep' = {
   name: appServicePlanDeploymentName
@@ -28,6 +41,26 @@ module asp './appServicePlan.bicep' = {
   }
 }
 
+resource uami 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: uamiName
+  location: location
+}
+
+resource kvSecretsUserRole 'Microsoft.Authorization/roleDefinitions@2022-05-01-preview' existing = {
+  scope: subscription()
+  name: keyVaultSecretsUserRoleId
+}
+
+resource ra 'Microsoft.Authorization/roleAssignments@2022-04-01'= {
+  name: guid(kv.id, uamiName, kvSecretsUserRole.id)
+  scope: kv
+  properties: {
+    principalId: uami.properties.principalId
+    roleDefinitionId: kvSecretsUserRole.id
+    principalType: 'ServicePrincipal'
+  }
+}
+
 module webApp './webApp.bicep' = {
   name: webAppDeploymentName
   params: {
@@ -35,6 +68,10 @@ module webApp './webApp.bicep' = {
     location: location
     webAppName: webAppName
     vnetIntegrationSubnetId: webAppVnetIntegrationSubnetId
+    logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
+    userAssignedManagedIdentityResourceId: uami.id
+    keyVaultResourceId: kv.id
+    appInsightsConnectionStringSecretUri: appInsightsConnectionStringSecretUri
   }
 }
 
