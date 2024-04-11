@@ -5,6 +5,7 @@ param vnetIntegrationSubnetId string
 param logAnalyticsWorkspaceId string
 param keyVaultResourceId string
 param userAssignedManagedIdentityResourceId string
+param appInsightsConnectionStringSecretUri string
 
 resource webApp 'Microsoft.Web/sites@2022-03-01' = {
   name: webAppName
@@ -21,7 +22,14 @@ resource webApp 'Microsoft.Web/sites@2022-03-01' = {
       scmMinTlsVersion: '1.2'
       ftpsState: 'FtpsOnly'
       alwaysOn: true
+      appSettings: [
+        {
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+          value: '@Microsoft.KeyVault(SecretUri=${appInsightsConnectionStringSecretUri})'
+        }
+      ]
     }
+    keyVaultReferenceIdentity: userAssignedManagedIdentityResourceId
     serverFarmId: appServicePlanId
     httpsOnly: true
     publicNetworkAccess: 'Disabled'

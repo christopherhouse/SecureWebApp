@@ -12,6 +12,9 @@ param enableZoneRedundancy bool = false
 param appServicePlanSku string
 param buildId string = substring(newGuid(), 0, 8)
 
+var appInsightsName = '${workloadName}-${environmentSuffix}-ai'
+var appInsightsDeploymentName = '${appInsightsName}-${buildId}'
+
 // Web App
 var appServicePlanName = '${workloadName}-${environmentSuffix}-asp'
 var webAppName = '${workloadName}-${environmentSuffix}-appsvc'
@@ -42,6 +45,17 @@ resource servicesSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' e
   parent: vnet
 }
 
+module appInsights './modules/applicationInsights/applicationInsights.bicep' = {
+  name: appInsightsDeploymentName
+  params: {
+    location: location
+    appInsightsName: appInsightsName
+    buildId: buildId
+    keyVaultName: keyVaultName
+    logAnalyticsWorkspaceId: laws.id
+  }
+}
+
 module webApp './modules/appService/privateWebApp.bicep' = {
   name: webAppDeploymentName
   params: {
@@ -55,6 +69,7 @@ module webApp './modules/appService/privateWebApp.bicep' = {
     webAppVnetIntegrationSubnetId: webSubnet.id
     enableZoneRedundancy: enableZoneRedundancy
     logAnalyticsWorkspaceId: laws.id
-    keyVaultResourceId: kv.id
+    keyVaultName: keyVaultName
+    appInsightsConnectionStringSecretUri: appInsights.outputs.connectionStringSecretUri
   }
 }
