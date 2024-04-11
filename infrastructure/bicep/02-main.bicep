@@ -69,6 +69,8 @@ module appConfig './modules/appConfiguration/configurationStore.bicep' = {
     keyVaultName: keyVaultName
     logAnalyticsWorkspaceId: laws.id
     buildId: buildId
+    servicesSubnetResourceId: servicesSubnet.id
+    vnetResourceId: vnet.id
   }
 }
 
@@ -87,5 +89,6 @@ module webApp './modules/appService/privateWebApp.bicep' = {
     logAnalyticsWorkspaceId: laws.id
     keyVaultName: keyVaultName
     appInsightsConnectionStringSecretUri: appInsights.outputs.connectionStringSecretUri
+    appConfigurationConnectionStringSecretUri: appConfig.outputs.appConfigConnectionStringSecretUri
   }
 }

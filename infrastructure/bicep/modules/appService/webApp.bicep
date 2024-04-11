@@ -6,6 +6,7 @@ param logAnalyticsWorkspaceId string
 param keyVaultResourceId string
 param userAssignedManagedIdentityResourceId string
 param appInsightsConnectionStringSecretUri string
+param appConfigurationConnectionStringSecretUri string
 
 resource webApp 'Microsoft.Web/sites@2022-03-01' = {
   name: webAppName
@@ -26,6 +27,10 @@ resource webApp 'Microsoft.Web/sites@2022-03-01' = {
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: '@Microsoft.KeyVault(SecretUri=${appInsightsConnectionStringSecretUri})'
+        }
+        {
+          name: 'APP_CONFIGURATION_CONNECTION_STRING'
+          value: '@Microsoft.KeyVault(SecretUri=${appConfigurationConnectionStringSecretUri})'
         }
       ]
     }

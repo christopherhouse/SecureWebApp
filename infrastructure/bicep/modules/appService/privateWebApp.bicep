@@ -10,6 +10,7 @@ param webAppVnetIntegrationSubnetId string
 param logAnalyticsWorkspaceId string
 param keyVaultName string
 param appInsightsConnectionStringSecretUri string
+param appConfigurationConnectionStringSecretUri string
 param buildId string
 
 var keyVaultSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'
@@ -29,7 +30,6 @@ resource kv 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
   name: keyVaultName
   scope: resourceGroup()
 }
-
 
 module asp './appServicePlan.bicep' = {
   name: appServicePlanDeploymentName
@@ -72,6 +72,7 @@ module webApp './webApp.bicep' = {
     userAssignedManagedIdentityResourceId: uami.id
     keyVaultResourceId: kv.id
     appInsightsConnectionStringSecretUri: appInsightsConnectionStringSecretUri
+    appConfigurationConnectionStringSecretUri: appConfigurationConnectionStringSecretUri
   }
 }
 
