@@ -4,7 +4,8 @@ param environmentSuffix string
 param logAnalyticsWorkspaceName string
 param keyVaultName string
 param vnetName string
-param webSubnetName string
+param webInboundSubnetName string
+param webOutboundSubnetName string
 param servicesSubnetName string
 param appGatewaySubnetName string
 param enableZoneRedundancy bool = false
@@ -40,8 +41,13 @@ resource vnet 'Microsoft.Network/virtualNetworks@2023-09-01' existing = {
   scope: resourceGroup()
 }
 
-resource webSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' existing = {
-  name: webSubnetName
+resource webInboundSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' existing = {
+  name: webInboundSubnetName
+  parent: vnet
+}
+
+resource webOutboundSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' existing = {
+  name: webOutboundSubnetName
   parent: vnet
 }
 
@@ -83,8 +89,8 @@ module webApp './modules/appService/privateWebApp.bicep' = {
     buildId: buildId
     webAppName: webAppName
     vnetResourceId: vnet.id
-    webAppPrivateLinkSubnetId: servicesSubnet.id
-    webAppVnetIntegrationSubnetId: webSubnet.id
+    webAppPrivateLinkSubnetId: webInboundSubnet.id
+    webAppVnetIntegrationSubnetId: webOutboundSubnet.id
     enableZoneRedundancy: enableZoneRedundancy
     logAnalyticsWorkspaceId: laws.id
     keyVaultName: keyVaultName

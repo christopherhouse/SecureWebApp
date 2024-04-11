@@ -15,14 +15,16 @@ type subnetConfigurationType = {
 
 @export()
 type subnetConfigurationsType = {
-  webAppSubnet: subnetConfigurationType
+  webAppOutboundSubnet: subnetConfigurationType
+  webAppInboundSubnet: subnetConfigurationType
   databaseSubnet: subnetConfigurationType
   servicesSubnet: subnetConfigurationType
   appGwSubnet: subnetConfigurationType
 }
 
 // Subnets
-var webAppSubnetDeploymentName = 'webApp-subnet-${buildId}'
+var webAppOutboundSubnetDeploymentName = '${subnetConfiguration.webAppOutboundSubnet.name}-${buildId}'
+var webAppInboundSubnetDeploymentName = '${subnetConfiguration.webAppInboundSubnet.name}-${buildId}'
 var databaseSubnetDeploymentName = 'database-subnet-${buildId}'
 var servicesSubnetDeploymentName = 'services-subnet-${buildId}'
 var appGwSubnetDeploymentName = 'appGw-subnet-${buildId}'
@@ -61,15 +63,29 @@ module nsg './modules/networkSecurityGroup/allowVnetNetworkSecurityGroup.bicep' 
 // Added manual dependencies on each subnet to force serial deployment since it seems like
 // deploying these in parallel leads to some kind of race condtion
 
-module webAppSubnet './modules/virtualNetwork/subnet.bicep' = {
-  name: webAppSubnetDeploymentName
+module webAppOutboundSubnet './modules/virtualNetwork/subnet.bicep' = {
+  name: webAppOutboundSubnetDeploymentName
   params: {
-    subnetName: subnetConfiguration.webAppSubnet.name
-    addressPrefix: subnetConfiguration.webAppSubnet.addressPrefix
-    delegation: subnetConfiguration.webAppSubnet.delegation
+    subnetName: subnetConfiguration.webAppOutboundSubnet.name
+    addressPrefix: subnetConfiguration.webAppOutboundSubnet.addressPrefix
+    delegation: subnetConfiguration.webAppOutboundSubnet.delegation
     vnetName: vnetName
     nsgResourceId: nsg.outputs.id
   }
+}
+
+module webAppInboundSubnet './modules/virtualNetwork/subnet.bicep' = {
+  name: webAppInboundSubnetDeploymentName
+  params: {
+    subnetName: subnetConfiguration.webAppInboundSubnet.name
+    addressPrefix: subnetConfiguration.webAppInboundSubnet.addressPrefix
+    delegation: subnetConfiguration.webAppInboundSubnet.delegation
+    vnetName: vnetName
+    nsgResourceId: nsg.outputs.id
+  }
+  dependsOn: [
+    webAppOutboundSubnet
+  ]
 }
 
 module databaseSubnet './modules/virtualNetwork/subnet.bicep' = {
@@ -82,7 +98,7 @@ module databaseSubnet './modules/virtualNetwork/subnet.bicep' = {
     nsgResourceId: nsg.outputs.id
   }
   dependsOn: [
-    webAppSubnet
+    webAppInboundSubnet
   ]
 }
 
@@ -126,7 +142,8 @@ module kv './modules/keyVault/privateKeyVault.bicep' = {
   }
 }
 
-output webAppSubnetId string = webAppSubnet.outputs.subnetId
+output webAppOutboundSubnetId string = webAppOutboundSubnet.outputs.subnetId
+output webAppInboundSubnetId string = webAppInboundSubnet.outputs.subnetId
 output databaseSubnet string = databaseSubnet.outputs.subnetId
 output servicesSubnetId string = servicesSubnet.outputs.subnetId
 output appGwSubnetId string = appGwSubnet.outputs.subnetId
