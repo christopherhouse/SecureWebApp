@@ -26,6 +26,12 @@ var webAppDeploymentName = '${webAppName}-private-${buildId}'
 var appConfigName = '${workloadName}-${environmentSuffix}-appconfig'
 var appConfigDeploymentName = '${appConfigName}-${buildId}'
 
+// Storage
+var baseStorageAccountName = '${workloadName}${environmentSuffix}'
+var shortStorageAccountName = length(baseStorageAccountName) > 22 ? substring(baseStorageAccountName, 0, 22) : baseStorageAccountName
+var storageAccountName = toLower('${shortStorageAccountName}sa')
+var storageAccountDeploymentName = '${storageAccountName}-${buildId}'
+
 resource laws 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {
   name: logAnalyticsWorkspaceName
   scope: resourceGroup()
@@ -96,5 +102,19 @@ module webApp './modules/appService/privateWebApp.bicep' = {
     keyVaultName: keyVaultName
     appInsightsConnectionStringSecretUri: appInsights.outputs.connectionStringSecretUri
     appConfigurationConnectionStringSecretUri: appConfig.outputs.appConfigConnectionStringSecretUri
+  }
+}
+
+module storage './modules/storage/privateStorageAccount.bicep' = {
+  name: storageAccountDeploymentName
+  params: {
+    location: location
+    buildId: buildId
+    keyVaultName: keyVaultName
+    storageAccountName: storageAccountName
+    storageConnectionStringSecretName: 'STORAGE'
+    subnetId: servicesSubnet.id
+    vnetResourceId: vnet.id
+    zoneRedundant: enableZoneRedundancy
   }
 }
