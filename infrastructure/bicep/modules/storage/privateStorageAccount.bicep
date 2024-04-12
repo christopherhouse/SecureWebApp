@@ -2,28 +2,10 @@ param storageAccountName string
 param buildId string
 param location string
 param subnetId string
-param blobDnsZoneId string
-param fileDnsZoneId string
-param queueDnsZoneId string
-param tableDnsZoneId string
-param fileShares array = []
 param keyVaultName string
 param storageConnectionStringSecretName string
 param zoneRedundant bool
-
-/*
-  The fileShares parameter expects an array of objects with the following structure:
-  [
-    {
-      name: 'share1',
-      quota: 1024
-    },
-    {
-      name: 'share2',
-      quota: 2048
-    }
-  ]
-*/
+param vnetResourceId string
 
 var blobPrivateEndpointName = '${storageAccountName}-blob-pe'
 var filePrivateEndpointName = '${storageAccountName}-file-pe'
@@ -39,12 +21,21 @@ var storageAccountDeploymentName = '${storageAccountName}-mod-${buildId}'
 
 var storageSku = zoneRedundant ? 'Standard_ZRS' : 'Standard_LRS'
 
+var dnsDeploymentName = 'storage-dns-${buildId}'
+
+module dns './storagePrivateDns.bicep' = {
+  name: dnsDeploymentName
+  params: {
+    buildId: buildId
+    vnetResourceId: vnetResourceId
+  }
+}
+
 module storage './storageAccount.bicep' = {
   name: storageAccountDeploymentName
   params: {
     storageAccountName: storageAccountName
     location: location
-    fileShares: fileShares
     buildId: buildId
     keyVaultName: keyVaultName
     storageConnectionStringSecretName: storageConnectionStringSecretName
@@ -55,7 +46,7 @@ module storage './storageAccount.bicep' = {
 module blobPe '../privateEndpoint/privateEndpoint.bicep' = {
   name: blobPrivateEndpointDeploymentName
   params: {
-    dnsZoneId: blobDnsZoneId
+    dnsZoneId: dns.outputs.blobDnsZoneId
     groupId: 'blob'
     location: location
     privateEndpointName: blobPrivateEndpointName
@@ -67,7 +58,7 @@ module blobPe '../privateEndpoint/privateEndpoint.bicep' = {
 module filePe '../privateEndpoint/privateEndpoint.bicep' = {
   name: filePrivateEndpointDeploymentName
   params: {
-    dnsZoneId: fileDnsZoneId
+    dnsZoneId: dns.outputs.fileDnsZoneId
     groupId: 'file'
     location: location
     privateEndpointName: filePrivateEndpointName
@@ -79,7 +70,7 @@ module filePe '../privateEndpoint/privateEndpoint.bicep' = {
 module queuePe '../privateEndpoint/privateEndpoint.bicep' = {
   name: queuePrivateEndpointDeploymentName
   params: {
-    dnsZoneId: queueDnsZoneId
+    dnsZoneId: dns.outputs.queueDnsZoneId
     groupId: 'queue'
     location: location
     privateEndpointName: queuePrivateEndpointName
@@ -91,7 +82,7 @@ module queuePe '../privateEndpoint/privateEndpoint.bicep' = {
 module tablePe '../privateEndpoint/privateEndpoint.bicep' = {
   name: tablePrivateEndpointDeploymentName
   params: {
-    dnsZoneId: tableDnsZoneId
+    dnsZoneId: dns.outputs.tableDnsZoneId
     groupId: 'table'
     location: location
     privateEndpointName: tablePrivateEndpointName
