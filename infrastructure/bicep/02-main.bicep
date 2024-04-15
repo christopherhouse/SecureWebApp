@@ -32,6 +32,10 @@ var shortStorageAccountName = length(baseStorageAccountName) > 22 ? substring(ba
 var storageAccountName = toLower('${shortStorageAccountName}sa')
 var storageAccountDeploymentName = '${storageAccountName}-${buildId}'
 
+// App Gateway
+var appGatewayName = '${workloadName}-${environmentSuffix}-appgw'
+var appGatewayDeploymentName = '${appGatewayName}-${buildId}'
+
 resource laws 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {
   name: logAnalyticsWorkspaceName
   scope: resourceGroup()
@@ -59,6 +63,11 @@ resource webOutboundSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01
 
 resource servicesSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' existing = {
   name: servicesSubnetName
+  parent: vnet
+}
+
+resource appGwSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' existing = {
+  name: appGatewaySubnetName
   parent: vnet
 }
 
@@ -117,4 +126,37 @@ module storage './modules/storage/privateStorageAccount.bicep' = {
     vnetResourceId: vnet.id
     zoneRedundant: enableZoneRedundancy
   }
+}
+
+// module appGw './modules/applicationGateway/applicationGateway.bicep' = {
+//   name: appGatewayDeploymentName
+//   params: {
+//     location: location
+//     appGatewayName: appGatewayName
+//     appGatewaySku: 'Standard_v2'
+//     appGatewaySkuCapacity: 1
+//     frontEndCertificateKeyVaultSecretName: 'www_chrishou_se'
+//     keyVaultName: kv.name
+//     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceName
+//     subnetResourceId: appGwSubnet.id
+//     webAppBackendHostName: webApp.outputs.defaultHostName
+//     webAppFrontEndHostName: 'www.chrishou.se'
+//   }
+// }
+
+module appGw './modules/applicationGateway/appGw.bicep' = {
+  name: appGatewayDeploymentName
+  params: {
+    location: location
+    appGatewayName: appGatewayName
+    appGatewaySubnetName: appGatewaySubnetName
+    keyVaultName: keyVaultName
+    skuCapacity: 3
+    skuName: 'Standard_v2'
+    vnetName: vnetName
+    webAppSslCertKeyVaultSecretName: 'www-chrishou-se'
+  }
+  dependsOn: [
+    webApp
+  ]
 }

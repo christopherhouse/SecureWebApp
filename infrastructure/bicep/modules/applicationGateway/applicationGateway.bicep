@@ -3,20 +3,29 @@ param location string
 param subnetResourceId string
 param logAnalyticsWorkspaceResourceId string
 param keyVaultName string
-param internalGatewayHostName string
-param internalGatewayHostPrivateIp string
-param apimBackendHostName string
-param keyVaultSecretId string
+param webAppFrontEndHostName string
+param webAppBackendHostName string
+param frontEndCertificateKeyVaultSecretName string
+@allowed(['WAV_v2', 'Standard_v2'])
+param appGatewaySku string
+param appGatewaySkuCapacity int
 param zoneRedundant bool = false
 
 var internalGatewayHttpsListener = 'internalGatewayHttpsListener'
-var apimFrontEndPort = 'https_443'
+var webAppFrontEndPort = 'https_443'
 var appGatewayFrontendIp = 'appGatewayFrontendIp'
-var internalSslCert = 'internalSslCert'
+var webAppSslCert = 'webAppSslCert'
 var publicFrontEndIpConfiguration = 'appGatewayPublicFrontendIp'
-var internalGatewayProbeName = 'internalGatewayProbe'
-var internalGatewayBackendSettingsName = 'internalGatewayBackendSettings'
-var internalGatewayBackendAddressPoolName = 'internalGatewayBackendAddressPool'
+//var internalGatewayProbeName = 'internalGatewayProbe'
+//var internalGatewayBackendSettingsName = 'internalGatewayBackendSettings'
+//var internalGatewayBackendAddressPoolName = 'internalGatewayBackendAddressPool'
+var webAppProbeName = 'webAppProbe'
+var webAppBackendSettingsName = 'webAppBackendSettings'
+var webAppGatewayBackendAddressPoolName = 'webAppBackendAddressPool'
+var webAppHttpsListener = 'webAppHttpsListener'
+
+var keyVaultSecretId = 'https://${keyVaultName}.${environment().suffixes.keyvaultDns}/secrets/${frontEndCertificateKeyVaultSecretName}'
+
 
 var zones = zoneRedundant ? ['1', '2', '3'] : []
 
@@ -31,102 +40,100 @@ var publicFrontEndIpConfigurations =  [
   }
 ]
 
-var privateFrontEndIpConfiguration = length(internalGatewayHostName) > 0 ? [{
-  name: 'appGatewayFrontendIp'
-  properties: {
-    privateIPAddress: internalGatewayHostPrivateIp
-    privateIPAllocationMethod: 'Static'
-    subnet: {
-      id: subnetResourceId
-    }
-  }
-}] : []
+// var privateFrontEndIpConfiguration = length(internalGatewayHostName) > 0 ? [{
+//   name: 'appGatewayFrontendIp'
+//   properties: {
+//     privateIPAddress: internalGatewayHostPrivateIp
+//     privateIPAllocationMethod: 'Static'
+//     subnet: {
+//       id: subnetResourceId
+//     }
+//   }
+// }] : []
 
-var frontEndIpConfigurations = concat(publicFrontEndIpConfigurations, privateFrontEndIpConfiguration)
+//var frontEndIpConfigurations = concat(publicFrontEndIpConfigurations, privateFrontEndIpConfiguration)
 
-var internalGatewayBackendAddressPool = {
-  name: internalGatewayBackendAddressPoolName
+var webAppBackendAddressPool = {
+  name: webAppGatewayBackendAddressPoolName
   properties: {
     backendAddresses: [
       {
-        fqdn: apimBackendHostName
+        fqdn: webAppBackendHostName
       }
     ]
   }
 }
 
-var internalGatewayBackendSettings = {
-  name: internalGatewayBackendSettingsName
+var webAppBackendSettings = {
+  name: webAppBackendSettingsName
   properties: {
     port: 443
     protocol: 'Https'
     cookieBasedAffinity: 'Disabled'
     pickHostNameFromBackendAddress: false
-    hostName: internalGatewayHostName
+    hostName: webAppBackendHostName
     requestTimeout: 30
     probe: {
-      id: resourceId('Microsoft.Network/applicationGateways/probes', appGatewayName, internalGatewayProbeName)
+      id: resourceId('Microsoft.Network/applicationGateways/probes', appGatewayName, webAppProbeName)
     }
   }
 }
 
-var internalGatewayRoutingRule = {
-  name: 'internalGatewayHttpsRule'
+var webAppRoutingRule = {
+  name: 'webAppHttpsRule'
   properties: {
     priority: 4
     ruleType: 'Basic'
     httpListener: {
-      id: resourceId('Microsoft.Network/applicationGateways/httpListeners', appGatewayName, internalGatewayHttpsListener)
+      id: resourceId('Microsoft.Network/applicationGateways/httpListeners', appGatewayName, webAppHttpsListener)
     }
     backendAddressPool: {
-      id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', appGatewayName, internalGatewayBackendAddressPoolName)
+      id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', appGatewayName, webAppGatewayBackendAddressPoolName)
     }
     backendHttpSettings: {
-      id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', appGatewayName, internalGatewayBackendSettingsName)
+      id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', appGatewayName, webAppBackendSettingsName)
     }
   }
 }
 
-var internalGatewayListener = {
+var webAppHttpListener = {
     name: internalGatewayHttpsListener
     properties: {
-      hostName: internalGatewayHostName
+      hostName: webAppFrontEndHostName
       frontendIPConfiguration: {
         id: resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', appGatewayName, appGatewayFrontendIp)
       }
       frontendPort: {
-        id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', appGatewayName, apimFrontEndPort)
+        id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', appGatewayName, webAppFrontEndPort)
       }
       protocol: 'Https'
       sslCertificate: {
-        id: resourceId('Microsoft.Network/applicationGateways/sslCertificates', appGatewayName, internalSslCert)
+        id: resourceId('Microsoft.Network/applicationGateways/sslCertificates', appGatewayName, webAppSslCert)
       
     }
   }
 }
 
-var internalCert = {
-  name: internalSslCert
+var webAppCert = {
+  name: webAppSslCert
   properties: {
     keyVaultSecretId: keyVaultSecretId
   }
 }
 
 var gatewayFEPort = [{
-  name: apimFrontEndPort
+  name: webAppFrontEndPort
   properties: {
     port: 443
   }
 }]
 
-var frontEndPorts = concat(gatewayFEPort, [])
-
-var internalGatewayProbe = {
-  name: internalGatewayProbeName
+var webAppGatewayProbe = {
+  name: webAppProbeName
   properties: {
     protocol: 'Https'
-    host: internalGatewayHostName
-    path: '/status-0123456789abcdef'
+    host: webAppBackendHostName
+    path: '/'
     interval: 30
     timeout: 120
     unhealthyThreshold: 3
@@ -188,9 +195,9 @@ resource appGw 'Microsoft.Network/applicationGateways@2023-04-01' = {
   }
   properties: {
     sku: {
-      name: 'WAF_v2'
-      tier: 'WAF_v2'
-      capacity: 1
+      name: appGatewaySku
+      tier: appGatewaySku
+      capacity: appGatewaySkuCapacity
     }
     gatewayIPConfigurations: [
       {
@@ -202,19 +209,19 @@ resource appGw 'Microsoft.Network/applicationGateways@2023-04-01' = {
         }
       }
     ]
-    frontendIPConfigurations: frontEndIpConfigurations
-    frontendPorts: frontEndPorts
-    backendAddressPools: [internalGatewayBackendAddressPool]
-    backendHttpSettingsCollection: [internalGatewayBackendSettings]
-    httpListeners: [internalGatewayListener]
-    requestRoutingRules: [internalGatewayRoutingRule]
-    probes: [internalGatewayProbe]
-    sslCertificates: [internalCert]
+    frontendIPConfigurations: publicFrontEndIpConfigurations
+    frontendPorts: gatewayFEPort
+    backendAddressPools: [webAppBackendAddressPool]
+    backendHttpSettingsCollection: [webAppBackendSettings]
+    httpListeners: [webAppHttpListener]
+    requestRoutingRules: [webAppRoutingRule]
+    probes: [webAppGatewayProbe]
+    sslCertificates: [webAppCert]
     sslPolicy: {
       policyType: 'Predefined'
       policyName: 'AppGwSslPolicy20220101S'
     }
-    webApplicationFirewallConfiguration: {
+    webApplicationFirewallConfiguration: appGatewaySku == 'WAF_v2' ? {
       enabled: true
       firewallMode: 'Prevention'
       ruleSetType: 'OWASP'
@@ -224,7 +231,7 @@ resource appGw 'Microsoft.Network/applicationGateways@2023-04-01' = {
       maxRequestBodySizeInKb: 128
       fileUploadLimitInMb: 100
       exclusions: []
-    }
+    } : null
   }
   zones: zones
 }

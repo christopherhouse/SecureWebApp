@@ -70,7 +70,6 @@ module webApp './webApp.bicep' = {
     vnetIntegrationSubnetId: webAppVnetIntegrationSubnetId
     logAnalyticsWorkspaceId: logAnalyticsWorkspaceId
     userAssignedManagedIdentityResourceId: uami.id
-    keyVaultResourceId: kv.id
     appInsightsConnectionStringSecretUri: appInsightsConnectionStringSecretUri
     appConfigurationConnectionStringSecretUri: appConfigurationConnectionStringSecretUri
   }
@@ -95,3 +94,5 @@ module webAppPe '../privateEndpoint/privateEndpoint.bicep' = {
     targetResourceId: webApp.outputs.id
   }
 }
+
+output defaultHostName string = webApp.outputs.defaultHostName
