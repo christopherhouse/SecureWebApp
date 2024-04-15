@@ -3,7 +3,6 @@ param location string
 param appServicePlanId string
 param vnetIntegrationSubnetId string
 param logAnalyticsWorkspaceId string
-param keyVaultResourceId string
 param userAssignedManagedIdentityResourceId string
 param appInsightsConnectionStringSecretUri string
 param appConfigurationConnectionStringSecretUri string
@@ -82,3 +81,5 @@ resource diags 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
 
 output id string = webApp.id
 output name string = webApp.name
+output defaultHostName string = webApp.properties.defaultHostName
+
