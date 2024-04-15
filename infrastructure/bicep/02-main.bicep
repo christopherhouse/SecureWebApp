@@ -6,11 +6,24 @@ param keyVaultName string
 param vnetName string
 param webInboundSubnetName string
 param webOutboundSubnetName string
+param databaseSubnetName string
 param servicesSubnetName string
 param appGatewaySubnetName string
 param enableZoneRedundancy bool = false
 @allowed(['S1', 'S2', 'S3', 'P1v3', 'P2v3', 'P3v3', 'P1mv3', 'P2mv3', 'P3mv3'])
 param appServicePlanSku string
+param sqlAdminEntraObjectId string
+param sqlAdminLoginName string
+@allowed(['User', 'Group', 'Application'])
+param sqlAdminPrincipalType string
+param sqlCollation string = 'SQL_Latin1_General_CP1_CI_AS'
+param sqlDatabaseName string
+param sqlDatabaseMaxSizeInGb int
+param sqlvCpuCount int
+@allowed(['Local', 'Zone', 'Geo', 'GeoZone'])
+param sqlBackupStorageRedundancy string = 'Local'
+@allowed(['LicenseIncluded', 'BasePrice'])
+param sqlLicenseType string = 'LicenseIncluded'
 param buildId string = substring(newGuid(), 0, 8)
 
 // App Insights
@@ -36,13 +49,12 @@ var storageAccountDeploymentName = '${storageAccountName}-${buildId}'
 var appGatewayName = '${workloadName}-${environmentSuffix}-appgw'
 var appGatewayDeploymentName = '${appGatewayName}-${buildId}'
 
+// SQL Database
+var sqlServerName = '${workloadName}-${environmentSuffix}-sqlsrv'
+var sqlDbDeploymentName = '${sqlServerName}-${buildId}'
+
 resource laws 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {
   name: logAnalyticsWorkspaceName
-  scope: resourceGroup()
-}
-
-resource kv 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
-  name: keyVaultName
   scope: resourceGroup()
 }
 
@@ -66,10 +78,15 @@ resource servicesSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' e
   parent: vnet
 }
 
-resource appGwSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' existing = {
-  name: appGatewaySubnetName
+resource dbSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' existing = {
+  name: databaseSubnetName
   parent: vnet
 }
+
+// resource appGwSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' existing = {
+//   name: appGatewaySubnetName
+//   parent: vnet
+// }
 
 module appInsights './modules/applicationInsights/applicationInsights.bicep' = {
   name: appInsightsDeploymentName
@@ -159,4 +176,25 @@ module appGw './modules/applicationGateway/appGw.bicep' = {
   dependsOn: [
     webApp
   ]
+}
+
+module sqlDb './modules/sqlDatabase/privateSqlDatabase.bicep' = {
+  name: sqlDbDeploymentName
+  params: {
+    location: location
+    sqlAdminEntraObjectId: sqlAdminEntraObjectId
+    sqlAdminLoginName: sqlAdminLoginName
+    sqlAdminPrincipalType: sqlAdminPrincipalType
+    sqlServerName: sqlServerName
+    buildId: buildId
+    databaseSubnetResourceId: dbSubnet.id
+    vnetResourceId: vnet.id
+    sqlCollation: sqlCollation
+    databaseName: sqlDatabaseName
+    databaseMaxSizeInGb: sqlDatabaseMaxSizeInGb
+    vCpuCount: sqlvCpuCount
+    enableZoneRedundancy: enableZoneRedundancy
+    backupStorageRedundancy: sqlBackupStorageRedundancy
+    sqlLicenseType: sqlLicenseType
+  }
 }

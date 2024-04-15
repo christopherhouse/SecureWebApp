@@ -14,7 +14,7 @@ param enableZoneRedundancy bool = false
 var zones = enableZoneRedundancy ? ['1', '2', '3'] : []
 
 //var keyVaultSecretId = 'https://${keyVaultName}.${environment().suffixes.keyvaultDns}/secrets/${webAppSslCertKeyVaultSecretName}'
-var keyVaultSecretId = 'https://${keyVaultName}.vault.azure.net/secrets/${webAppSslCertKeyVaultSecretName}'
+var keyVaultSecretId = 'https://${keyVaultName}${environment().suffixes.keyvaultDns}/secrets/${webAppSslCertKeyVaultSecretName}'
 var publicIpName = '${appGatewayName}-pip'
 
 var uamiName = '${appGatewayName}-uami'
