@@ -4,8 +4,10 @@ param location string
 //param publicIPAddresses_cmh_bplus_loc_appgw_pip_externalid string = '/subscriptions/e1f57a36-4892-4716-9a3f-661432b39dbe/resourceGroups/BICPLUS/providers/Microsoft.Network/publicIPAddresses/cmh-bplus-loc-appgw-pip'
 @allowed(['Standard_v2', 'WAF_v2'])
 param skuName string
-param skuCapacity int
+param minInstances int = 0
+param maxInstances int
 param keyVaultName string
+param webAppBackendHostName string
 param webAppSslCertKeyVaultSecretName string
 param vnetName string
 param appGatewaySubnetName string
@@ -157,7 +159,8 @@ resource applicationGateways_cmh_bplus_loc_appgw_name_resource 'Microsoft.Networ
           port: 443
           protocol: 'Https'
           cookieBasedAffinity: 'Disabled'
-          pickHostNameFromBackendAddress: true
+          pickHostNameFromBackendAddress: false
+          hostName: webAppBackendHostName
           requestTimeout: 20
           probe: {
             //id: '${applicationGateways_cmh_bplus_loc_appgw_name_resource.id}/probes/backendHttpsSettings22ef1a7b-18f6-4680-8469-dc2c9e0a009_'
@@ -240,8 +243,8 @@ resource applicationGateways_cmh_bplus_loc_appgw_name_resource 'Microsoft.Networ
     privateLinkConfigurations: []
     enableHttp2: true
     autoscaleConfiguration: {
-      minCapacity: 2
-      maxCapacity: 10
+      minCapacity: minInstances
+      maxCapacity: maxInstances
     }
   }
 }

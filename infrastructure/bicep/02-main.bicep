@@ -172,10 +172,9 @@ module appGw './modules/applicationGateway/appGw.bicep' = {
     skuName: 'Standard_v2'
     vnetName: vnetName
     webAppSslCertKeyVaultSecretName: 'www-chrishou-se'
+    webAppBackendHostName: webApp.outputs.defaultHostName
+    enableZoneRedundancy: enableZoneRedundancy
   }
-  dependsOn: [
-    webApp
-  ]
 }
 
 module sqlDb './modules/sqlDatabase/privateSqlDatabase.bicep' = {
