@@ -1,4 +1,7 @@
+@description('The build ID appended to deployment name to ensure uniqueness')
 param buildId string
+
+@description('The resource ID of the virtual network where the private DNS zones will be created')
 param vnetResourceId string
 
 var blobDnsZone = 'privatelink.blob.${environment().suffixes.storage}'
