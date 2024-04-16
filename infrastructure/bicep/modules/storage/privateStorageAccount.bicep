@@ -1,10 +1,25 @@
+@description('The name of the storage account to create')
 param storageAccountName string
+
+@description('The build ID of the deployment, used to create unique deploy names')
 param buildId string
+
+@description('The Azure region where the storage account should be created')
 param location string
+
+@description('The ID of the subnet where the private endpoints should be created')
 param subnetId string
+
+@description('The name of the key vault where the storage account connection string should be stored')
 param keyVaultName string
+
+@description('The name of the secret in the key vault where the storage account connection string should be stored')
 param storageConnectionStringSecretName string
+
+@description('Whether the storage account should be zone redundant')
 param zoneRedundant bool
+
+@description('The ID of the VNet where the private endpoints should be created')
 param vnetResourceId string
 
 var blobPrivateEndpointName = '${storageAccountName}-blob-pe'
