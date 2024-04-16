@@ -1,9 +1,22 @@
+@description('The name of the Azure App Configuration instance to create')
 param appConfigName string
+
+@description('The Azure region where the App Configuration store will be created')
 param location string
+
+@description('The resource ID of the Log Analytics workspace to send diagnostic logs to')
 param logAnalyticsWorkspaceId string
+
+@description('The name of the Azure Key Vault to store the read-only connection string')
 param keyVaultName string
+
+@description('The resource ID of the virtual network to deploy the private endpoint into')
 param vnetResourceId string
+
+@description('The resource ID of the subnet to deploy the private endpoint into')
 param servicesSubnetResourceId string
+
+@description('The build ID to append to deployment names')
 param buildId  string
 
 var keyVaultSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'

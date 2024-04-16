@@ -1,4 +1,7 @@
+@description('The name of the private DNS zone to create.')
 param zoneName string
+
+@description('The resource ID of the virtual network to link to the private DNS zone.')
 param vnetResourceId string
 
 resource zone 'Microsoft.Network/privateDnsZones@2020-06-01' = {

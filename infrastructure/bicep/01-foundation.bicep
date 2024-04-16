@@ -33,6 +33,9 @@ var appGwSubnetDeploymentName = 'appGw-subnet-${buildId}'
 var defaultNsgName = '${workloadName}-${environmentSuffix}-nsg'
 var defaultNsgDeploymentName = '${defaultNsgName}-${buildId}'
 
+var appGwNsgName = '${workloadName}-${environmentSuffix}-appGw-nsg'
+var appGwNsgDeploymentName = '${appGwNsgName}-${buildId}'
+
 // Log Analytics
 var logAnalyticsWorkspaceName = '${workloadName}-${environmentSuffix}-laws'
 var logAnalyticsDeploymentName = '${logAnalyticsWorkspaceName}-${buildId}'
@@ -57,6 +60,16 @@ module nsg './modules/networkSecurityGroup/allowVnetNetworkSecurityGroup.bicep' 
     nsgName: defaultNsgName
     location: location
     logAnalyticsWorkspaceResourceId: laws.outputs.id
+  }
+}
+
+module appGwNsg './modules/networkSecurityGroup/applicationGatewayNetworkSecurityGroup.bicep' = {
+  name: appGwNsgDeploymentName
+  params: {
+    location: location
+    logAnalyticsWorkspaceResourceId: laws.outputs.id
+    networkSecurityGroupName: appGwNsgName
+    appGatewaySubnetAddressSpace: subnetConfiguration.appGwSubnet.addressPrefix
   }
 }
 
@@ -124,6 +137,7 @@ module appGwSubnet './modules/virtualNetwork/subnet.bicep' = {
     addressPrefix: subnetConfiguration.appGwSubnet.addressPrefix
     delegation: subnetConfiguration.appGwSubnet.delegation
     vnetName: vnetName
+    nsgResourceId: appGwNsg.outputs.id
   }
   dependsOn: [
     servicesSubnet
