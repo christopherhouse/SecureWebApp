@@ -7,6 +7,9 @@ param location string
 @description('The resource ID of the Log Analytics workspace to send diagnostic logs to')
 param logAnalyticsWorkspaceResourceId string
 
+@description('The address space of the subnet where the app gateway is deployed')
+param appGatewaySubnetAddressSpace string
+
 resource nsg 'Microsoft.Network/networkSecurityGroups@2023-09-01' = {
   name: networkSecurityGroupName
   location: location
@@ -20,7 +23,7 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2023-09-01' = {
           sourcePortRange: '*'
           destinationPortRange: '443'
           sourceAddressPrefix: 'Internet'
-          destinationAddressPrefix: '10.0.1.0/24'
+          destinationAddressPrefix: appGatewaySubnetAddressSpace
           access: 'Allow'
           priority: 100
           direction: 'Inbound'

@@ -69,6 +69,7 @@ module appGwNsg './modules/networkSecurityGroup/applicationGatewayNetworkSecurit
     location: location
     logAnalyticsWorkspaceResourceId: laws.outputs.id
     networkSecurityGroupName: appGwNsgName
+    appGatewaySubnetAddressSpace: subnetConfiguration.appGwSubnet.addressPrefix
   }
 }
 
