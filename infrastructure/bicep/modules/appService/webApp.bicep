@@ -1,10 +1,25 @@
+@description('The name of the web app to create')
 param webAppName string
+
+@description('The Azure region where the web app should be created')
 param location string
+
+@description('The ID of the app service plan to use for the web app')
 param appServicePlanId string
+
+@description('The ID of the subnet to integrate the web app with for outbound vnet traffic')
 param vnetIntegrationSubnetId string
+
+@description('The ID of the Log Analytics workspace to send diagnostic logs to')
 param logAnalyticsWorkspaceId string
+
+@description('The ID of the user-assigned managed identity to assign to the web app')
 param userAssignedManagedIdentityResourceId string
+
+@description('The URI of the secret in Key Vault containing the Application Insights connection string')
 param appInsightsConnectionStringSecretUri string
+
+@description('The URI of the secret in Key Vault containing the App Configuration connection string')
 param appConfigurationConnectionStringSecretUri string
 
 resource webApp 'Microsoft.Web/sites@2022-03-01' = {

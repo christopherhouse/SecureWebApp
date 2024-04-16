@@ -1,4 +1,3 @@
-//param applicationGateways_cmh_bplus_loc_appgw_name string = 'cmh-bplus-loc-appgw'
 param appGatewayName string
 param location string
 //param publicIPAddresses_cmh_bplus_loc_appgw_pip_externalid string = '/subscriptions/e1f57a36-4892-4716-9a3f-661432b39dbe/resourceGroups/BICPLUS/providers/Microsoft.Network/publicIPAddresses/cmh-bplus-loc-appgw-pip'
@@ -11,6 +10,7 @@ param webAppBackendHostName string
 param webAppSslCertKeyVaultSecretName string
 param vnetName string
 param appGatewaySubnetName string
+param logAnalyticsWorkspaceId string
 param enableZoneRedundancy bool = false
 
 var zones = enableZoneRedundancy ? ['1', '2', '3'] : []
@@ -74,7 +74,7 @@ resource appGwPip 'Microsoft.Network/publicIPAddresses@2023-09-01' = {
 var appGatewayIpConfigName = 'appGatewayIpConfig'
 var sslCertNmae = 'www'
 
-resource applicationGateways_cmh_bplus_loc_appgw_name_resource 'Microsoft.Network/applicationGateways@2023-09-01' = {
+resource appGw 'Microsoft.Network/applicationGateways@2023-09-01' = {
   name: appGatewayName
   location: location
   zones: zones
@@ -245,5 +245,27 @@ resource applicationGateways_cmh_bplus_loc_appgw_name_resource 'Microsoft.Networ
       minCapacity: minInstances
       maxCapacity: maxInstances
     }
+  }
+}
+
+resource diags 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'laws'
+  scope: appGw
+  properties: {
+    logs: [
+      {
+        category: 'ApplicationGatewayAccessLog'
+        enabled: true
+      }
+      {
+        category: 'ApplicationGatewayPerformanceLog'
+        enabled: true
+      }
+      {
+        category: 'ApplicationGatewayFirewallLog'
+        enabled: true
+      }
+    ]
+    workspaceId: logAnalyticsWorkspaceId
   }
 }

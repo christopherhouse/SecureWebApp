@@ -1,16 +1,41 @@
+@description('The name of the App Service Plan to create')
 param appServicePlanName string
+
+@description('The name of the Web App to create')
 param webAppName string
+
+@description('The Azure region to create the resources in')
 param location string
+
+@description('The SKU of the App Service Plan to create')
 @allowed(['S1', 'S2', 'S3', 'P1v3', 'P2v3', 'P3v3', 'P1mv3', 'P2mv3', 'P3mv3'])
 param appServicePlanSku string
+
+@description('Whether to enable zone redundancy for the App Service Plan')
 param enableZoneRedundancy bool = false
+
+@description('The ID of the VNet to integrate the Web App with')
 param vnetResourceId string
+
+@description('The ID of the subnet that will receive web traffic via private endpoint')
 param webAppPrivateLinkSubnetId string
+
+@description('The ID of the subnet to use for outbound traffic from the web app to vnet.  Note this cannot be the same subnet as `webAppPrivateLinkSubnetId`')
 param webAppVnetIntegrationSubnetId string
+
+@description('The ID of the Log Analytics workspace to send diagnostics to')
 param logAnalyticsWorkspaceId string
+
+@description('The name of the Key Vault that contains App Insights and other connection strings, used for key Vault references')
 param keyVaultName string
+
+@description('The URI of the Key Vault secret that contains the App Insights connection string')
 param appInsightsConnectionStringSecretUri string
+
+@description('The URI of the Key Vault secret that contains the App Configuration connection string')
 param appConfigurationConnectionStringSecretUri string
+
+@description('The build ID to append to the deployment names')
 param buildId string
 
 var keyVaultSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'

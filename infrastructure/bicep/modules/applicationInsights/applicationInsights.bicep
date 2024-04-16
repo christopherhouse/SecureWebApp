@@ -1,7 +1,16 @@
+@description('The name of the App Insights resource to create')
 param appInsightsName string
+
+@description('The Azure region in which to create the App Insights resource')
 param location string
+
+@description('The ID of the Log Analytics workspace to link to the App Insights resource')
 param logAnalyticsWorkspaceId string
+
+@description('The name of the Key Vault to store the App Insights connection string and instrumentation key')
 param keyVaultName string
+
+@description('The build ID to  append to deployment names')
 param buildId string
 
 resource ai 'Microsoft.Insights/components@2020-02-02' = {

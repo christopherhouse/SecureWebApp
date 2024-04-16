@@ -156,6 +156,7 @@ module appGw './modules/applicationGateway/applicationGateway.bicep' = {
     enableZoneRedundancy: enableZoneRedundancy
     minInstances: appGatewayMinInstances
     maxInstances: appGatewayMaxInstances
+    logAnalyticsWorkspaceId: laws.id
   }
 }
 
@@ -177,5 +178,6 @@ module sqlDb './modules/sqlDatabase/privateSqlDatabase.bicep' = {
     enableZoneRedundancy: enableZoneRedundancy
     backupStorageRedundancy: sqlBackupStorageRedundancy
     sqlLicenseType: sqlLicenseType
+    logAnalyticsWorkspaceResourceId: laws.id
   }
 }
