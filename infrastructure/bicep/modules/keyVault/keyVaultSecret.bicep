@@ -1,5 +1,10 @@
+@description('The name of the secret to create')
 param secretName string
+
+@description('The name of the key vault to create the secret in')
 param keyVaultName string
+
+@description('The value of the secret to create')
 @secure()
 param secretValue string
 
