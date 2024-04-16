@@ -1,16 +1,38 @@
+@description('The name of the application gateway to create')
 param appGatewayName string
+
+@description('The Azure region where the application gateway will be created')
 param location string
-//param publicIPAddresses_cmh_bplus_loc_appgw_pip_externalid string = '/subscriptions/e1f57a36-4892-4716-9a3f-661432b39dbe/resourceGroups/BICPLUS/providers/Microsoft.Network/publicIPAddresses/cmh-bplus-loc-appgw-pip'
+
+@description('The SKU of the application gateway')
 @allowed(['Standard_v2', 'WAF_v2'])
 param skuName string
+
+@description('The minimum number of instances for the application gateway')
 param minInstances int = 0
+
+@description('The maximum number of instances for the application gateway')
 param maxInstances int
+
+@description('The name of the key vault where the SSL certificate is stored')
 param keyVaultName string
+
+@description('The hostname of the backend web app that application gateway will expose')
 param webAppBackendHostName string
+
+@description('The name of the secret in the key vault that contains the SSL certificate')
 param webAppSslCertKeyVaultSecretName string
+
+@description('The name of the virtual network where the application gateway will be deployed')
 param vnetName string
+
+@description('The name of the subnet where the application gateway will be deployed')
 param appGatewaySubnetName string
+
+@description('The name of the web app that the application gateway will expose')
 param logAnalyticsWorkspaceId string
+
+@description('Whether to enable zone redundancy for the application gateway')
 param enableZoneRedundancy bool = false
 
 var zones = enableZoneRedundancy ? ['1', '2', '3'] : []
