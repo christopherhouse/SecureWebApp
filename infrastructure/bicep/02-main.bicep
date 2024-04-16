@@ -10,6 +10,8 @@ param databaseSubnetName string
 param servicesSubnetName string
 param appGatewaySubnetName string
 param enableZoneRedundancy bool = false
+param appGatewayMinInstances int = 0
+param appGatewayMaxInstances int
 @allowed(['S1', 'S2', 'S3', 'P1v3', 'P2v3', 'P3v3', 'P1mv3', 'P2mv3', 'P3mv3'])
 param appServicePlanSku string
 param sqlAdminEntraObjectId string
@@ -83,11 +85,6 @@ resource dbSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' existin
   parent: vnet
 }
 
-// resource appGwSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' existing = {
-//   name: appGatewaySubnetName
-//   parent: vnet
-// }
-
 module appInsights './modules/applicationInsights/applicationInsights.bicep' = {
   name: appInsightsDeploymentName
   params: {
@@ -145,35 +142,20 @@ module storage './modules/storage/privateStorageAccount.bicep' = {
   }
 }
 
-// module appGw './modules/applicationGateway/applicationGateway.bicep' = {
-//   name: appGatewayDeploymentName
-//   params: {
-//     location: location
-//     appGatewayName: appGatewayName
-//     appGatewaySku: 'Standard_v2'
-//     appGatewaySkuCapacity: 1
-//     frontEndCertificateKeyVaultSecretName: 'www_chrishou_se'
-//     keyVaultName: kv.name
-//     logAnalyticsWorkspaceResourceId: logAnalyticsWorkspaceName
-//     subnetResourceId: appGwSubnet.id
-//     webAppBackendHostName: webApp.outputs.defaultHostName
-//     webAppFrontEndHostName: 'www.chrishou.se'
-//   }
-// }
-
-module appGw './modules/applicationGateway/appGw.bicep' = {
+module appGw './modules/applicationGateway/applicationGateway.bicep' = {
   name: appGatewayDeploymentName
   params: {
     location: location
     appGatewayName: appGatewayName
     appGatewaySubnetName: appGatewaySubnetName
     keyVaultName: keyVaultName
-    skuCapacity: 3
     skuName: 'Standard_v2'
     vnetName: vnetName
     webAppSslCertKeyVaultSecretName: 'www-chrishou-se'
     webAppBackendHostName: webApp.outputs.defaultHostName
     enableZoneRedundancy: enableZoneRedundancy
+    minInstances: appGatewayMinInstances
+    maxInstances: appGatewayMaxInstances
   }
 }
 

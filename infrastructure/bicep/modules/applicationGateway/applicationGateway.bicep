@@ -1,146 +1,23 @@
+//param applicationGateways_cmh_bplus_loc_appgw_name string = 'cmh-bplus-loc-appgw'
 param appGatewayName string
 param location string
-param subnetResourceId string
-param logAnalyticsWorkspaceResourceId string
+//param publicIPAddresses_cmh_bplus_loc_appgw_pip_externalid string = '/subscriptions/e1f57a36-4892-4716-9a3f-661432b39dbe/resourceGroups/BICPLUS/providers/Microsoft.Network/publicIPAddresses/cmh-bplus-loc-appgw-pip'
+@allowed(['Standard_v2', 'WAF_v2'])
+param skuName string
+param minInstances int = 0
+param maxInstances int
 param keyVaultName string
-param webAppFrontEndHostName string
 param webAppBackendHostName string
-param frontEndCertificateKeyVaultSecretName string
-@allowed(['WAV_v2', 'Standard_v2'])
-param appGatewaySku string
-param appGatewaySkuCapacity int
-param zoneRedundant bool = false
+param webAppSslCertKeyVaultSecretName string
+param vnetName string
+param appGatewaySubnetName string
+param enableZoneRedundancy bool = false
 
-var internalGatewayHttpsListener = 'internalGatewayHttpsListener'
-var webAppFrontEndPort = 'https_443'
-var appGatewayFrontendIp = 'appGatewayFrontendIp'
-var webAppSslCert = 'webAppSslCert'
-var publicFrontEndIpConfiguration = 'appGatewayPublicFrontendIp'
-//var internalGatewayProbeName = 'internalGatewayProbe'
-//var internalGatewayBackendSettingsName = 'internalGatewayBackendSettings'
-//var internalGatewayBackendAddressPoolName = 'internalGatewayBackendAddressPool'
-var webAppProbeName = 'webAppProbe'
-var webAppBackendSettingsName = 'webAppBackendSettings'
-var webAppGatewayBackendAddressPoolName = 'webAppBackendAddressPool'
-var webAppHttpsListener = 'webAppHttpsListener'
+var zones = enableZoneRedundancy ? ['1', '2', '3'] : []
 
-var keyVaultSecretId = 'https://${keyVaultName}.${environment().suffixes.keyvaultDns}/secrets/${frontEndCertificateKeyVaultSecretName}'
+var keyVaultSecretId = 'https://${keyVaultName}${environment().suffixes.keyvaultDns}/secrets/${webAppSslCertKeyVaultSecretName}'
+var publicIpName = '${appGatewayName}-pip'
 
-
-var zones = zoneRedundant ? ['1', '2', '3'] : []
-
-var publicFrontEndIpConfigurations =  [
-  {
-    name: publicFrontEndIpConfiguration
-    properties: {
-      publicIPAddress: {
-        id: pip.id
-      }
-    }
-  }
-]
-
-// var privateFrontEndIpConfiguration = length(internalGatewayHostName) > 0 ? [{
-//   name: 'appGatewayFrontendIp'
-//   properties: {
-//     privateIPAddress: internalGatewayHostPrivateIp
-//     privateIPAllocationMethod: 'Static'
-//     subnet: {
-//       id: subnetResourceId
-//     }
-//   }
-// }] : []
-
-//var frontEndIpConfigurations = concat(publicFrontEndIpConfigurations, privateFrontEndIpConfiguration)
-
-var webAppBackendAddressPool = {
-  name: webAppGatewayBackendAddressPoolName
-  properties: {
-    backendAddresses: [
-      {
-        fqdn: webAppBackendHostName
-      }
-    ]
-  }
-}
-
-var webAppBackendSettings = {
-  name: webAppBackendSettingsName
-  properties: {
-    port: 443
-    protocol: 'Https'
-    cookieBasedAffinity: 'Disabled'
-    pickHostNameFromBackendAddress: false
-    hostName: webAppBackendHostName
-    requestTimeout: 30
-    probe: {
-      id: resourceId('Microsoft.Network/applicationGateways/probes', appGatewayName, webAppProbeName)
-    }
-  }
-}
-
-var webAppRoutingRule = {
-  name: 'webAppHttpsRule'
-  properties: {
-    priority: 4
-    ruleType: 'Basic'
-    httpListener: {
-      id: resourceId('Microsoft.Network/applicationGateways/httpListeners', appGatewayName, webAppHttpsListener)
-    }
-    backendAddressPool: {
-      id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', appGatewayName, webAppGatewayBackendAddressPoolName)
-    }
-    backendHttpSettings: {
-      id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', appGatewayName, webAppBackendSettingsName)
-    }
-  }
-}
-
-var webAppHttpListener = {
-    name: internalGatewayHttpsListener
-    properties: {
-      hostName: webAppFrontEndHostName
-      frontendIPConfiguration: {
-        id: resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', appGatewayName, appGatewayFrontendIp)
-      }
-      frontendPort: {
-        id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', appGatewayName, webAppFrontEndPort)
-      }
-      protocol: 'Https'
-      sslCertificate: {
-        id: resourceId('Microsoft.Network/applicationGateways/sslCertificates', appGatewayName, webAppSslCert)
-      
-    }
-  }
-}
-
-var webAppCert = {
-  name: webAppSslCert
-  properties: {
-    keyVaultSecretId: keyVaultSecretId
-  }
-}
-
-var gatewayFEPort = [{
-  name: webAppFrontEndPort
-  properties: {
-    port: 443
-  }
-}]
-
-var webAppGatewayProbe = {
-  name: webAppProbeName
-  properties: {
-    protocol: 'Https'
-    host: webAppBackendHostName
-    path: '/'
-    interval: 30
-    timeout: 120
-    unhealthyThreshold: 3
-  }
-}
-
-var pipName = '${appGatewayName}-pip'
 var uamiName = '${appGatewayName}-uami'
 var keyVaultSecretsUserRoleId = '4633458b-17de-408a-b874-0445c86b69e6'
 
@@ -169,8 +46,18 @@ resource assignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   }
 }
 
-resource pip 'Microsoft.Network/publicIPAddresses@2023-06-01' = {
-  name: pipName
+resource vnet 'Microsoft.Network/virtualNetworks@2020-11-01' existing = {
+  name: vnetName
+  scope: resourceGroup()
+}
+
+resource appGwSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-09-01' existing = {
+  name: appGatewaySubnetName
+  parent: vnet
+}
+
+resource appGwPip 'Microsoft.Network/publicIPAddresses@2023-09-01' = {
+  name:publicIpName
   location: location
   sku: {
     name: 'Standard'
@@ -178,15 +65,19 @@ resource pip 'Microsoft.Network/publicIPAddresses@2023-06-01' = {
   properties: {
     publicIPAllocationMethod: 'Static'
     dnsSettings: {
-      domainNameLabel: pipName
+      domainNameLabel: publicIpName
     }
   }
-  zones: zoneRedundant ? ['1', '2', '3'] : []
+  zones: zones
 }
 
-resource appGw 'Microsoft.Network/applicationGateways@2023-04-01' = {
+var appGatewayIpConfigName = 'appGatewayIpConfig'
+var sslCertNmae = 'www'
+
+resource applicationGateways_cmh_bplus_loc_appgw_name_resource 'Microsoft.Network/applicationGateways@2023-09-01' = {
   name: appGatewayName
   location: location
+  zones: zones
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {
@@ -195,68 +86,164 @@ resource appGw 'Microsoft.Network/applicationGateways@2023-04-01' = {
   }
   properties: {
     sku: {
-      name: appGatewaySku
-      tier: appGatewaySku
-      capacity: appGatewaySkuCapacity
+      name: skuName
+      tier: skuName
     }
     gatewayIPConfigurations: [
       {
-        name: 'appGatewayIpConfig'
+        name: appGatewayIpConfigName
+        id: resourceId('Microsoft.Network/applicationGateways/gatewayIPConfigurations', appGatewayName, appGatewayIpConfigName)
         properties: {
           subnet: {
-            id: subnetResourceId
+            id: appGwSubnet.id
           }
         }
       }
     ]
-    frontendIPConfigurations: publicFrontEndIpConfigurations
-    frontendPorts: gatewayFEPort
-    backendAddressPools: [webAppBackendAddressPool]
-    backendHttpSettingsCollection: [webAppBackendSettings]
-    httpListeners: [webAppHttpListener]
-    requestRoutingRules: [webAppRoutingRule]
-    probes: [webAppGatewayProbe]
-    sslCertificates: [webAppCert]
-    sslPolicy: {
-      policyType: 'Predefined'
-      policyName: 'AppGwSslPolicy20220101S'
-    }
-    webApplicationFirewallConfiguration: appGatewaySku == 'WAF_v2' ? {
-      enabled: true
-      firewallMode: 'Prevention'
-      ruleSetType: 'OWASP'
-      ruleSetVersion: '3.2'
-      disabledRuleGroups: []
-      requestBodyCheck: true
-      maxRequestBodySizeInKb: 128
-      fileUploadLimitInMb: 100
-      exclusions: []
-    } : null
-  }
-  zones: zones
-}
-
-resource diags 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
-  name: 'laws'
-  scope: appGw
-  properties: {
-    logs: [
+    sslCertificates: [
       {
-        category: 'ApplicationGatewayAccessLog'
-        enabled: true
-      }
-      {
-        category: 'ApplicationGatewayPerformanceLog'
-        enabled: true
-      }
-      {
-        category: 'ApplicationGatewayFirewallLog'
-        enabled: true
+        name: sslCertNmae
+        id: resourceId('Microsoft.Network/applicationGateways/sslCertificates', appGatewayName, sslCertNmae)
+        properties: {
+          keyVaultSecretId: keyVaultSecretId
+        }
       }
     ]
-    workspaceId: logAnalyticsWorkspaceResourceId
+    trustedRootCertificates: []
+    trustedClientCertificates: []
+    sslProfiles: []
+    frontendIPConfigurations: [
+      {
+        name: 'appGwPublicFrontendIpIPv4'
+        //id: '${applicationGateways_cmh_bplus_loc_appgw_name_resource.id}/frontendIPConfigurations/appGwPublicFrontendIpIPv4'
+        id: resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', appGatewayName, 'appGwPublicFrontendIpIPv4')
+        properties: {
+          privateIPAllocationMethod: 'Dynamic'
+          publicIPAddress: {
+            id: appGwPip.id
+          }
+        }
+      }
+    ]
+    frontendPorts: [
+      {
+        name: 'port_443'
+        //id: '${applicationGateways_cmh_bplus_loc_appgw_name_resource.id}/frontendPorts/port_443'
+        id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', appGatewayName, 'port_443')
+        properties: {
+          port: 443
+        }
+      }
+    ]
+    backendAddressPools: [
+      {
+        name: 'webAppBackendPool'
+        //id: '${applicationGateways_cmh_bplus_loc_appgw_name_resource.id}/backendAddressPools/webAppBackendPool'
+        id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', appGatewayName, 'webAppBackendPool')
+        properties: {
+          backendAddresses: [
+            {
+              fqdn: 'bplus-loc-appsvc.azurewebsites.net'
+            }
+          ]
+        }
+      }
+    ]
+    loadDistributionPolicies: []
+    backendHttpSettingsCollection: [
+      {
+        name: 'backendHttpsSettings'
+        //id: '${applicationGateways_cmh_bplus_loc_appgw_name_resource.id}/backendHttpSettingsCollection/backendHttpsSettings'
+        id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', appGatewayName, 'backendHttpsSettings')
+        properties: {
+          port: 443
+          protocol: 'Https'
+          cookieBasedAffinity: 'Disabled'
+          pickHostNameFromBackendAddress: false
+          hostName: webAppBackendHostName
+          requestTimeout: 20
+          probe: {
+            //id: '${applicationGateways_cmh_bplus_loc_appgw_name_resource.id}/probes/backendHttpsSettings22ef1a7b-18f6-4680-8469-dc2c9e0a009_'
+            id: resourceId('Microsoft.Network/applicationGateways/probes', appGatewayName, 'backendHttpsSettings22ef1a7b-18f6-4680-8469-dc2c9e0a009_')
+          }
+        }
+      }
+    ]
+    backendSettingsCollection: []
+    httpListeners: [
+      {
+        name: 'publicHttps'
+        //id: '${applicationGateways_cmh_bplus_loc_appgw_name_resource.id}/httpListeners/publicHttps'
+        id: resourceId('Microsoft.Network/applicationGateways/httpListeners', appGatewayName, 'publicHttps')
+        properties: {
+          frontendIPConfiguration: {
+            //id: '${applicationGateways_cmh_bplus_loc_appgw_name_resource.id}/frontendIPConfigurations/appGwPublicFrontendIpIPv4'
+            id: resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', appGatewayName, 'appGwPublicFrontendIpIPv4')
+          }
+          frontendPort: {
+            //id: '${applicationGateways_cmh_bplus_loc_appgw_name_resource.id}/frontendPorts/port_443'
+            id: resourceId('Microsoft.Network/applicationGateways/frontendPorts', appGatewayName, 'port_443')
+          }
+          protocol: 'Https'
+          sslCertificate: {
+            id: resourceId('Microsoft.Network/applicationGateways/sslCertificates', appGatewayName, sslCertNmae)
+          }
+          hostNames: []
+          requireServerNameIndication: false
+          customErrorConfigurations: []
+        }
+      }
+    ]
+    listeners: []
+    urlPathMaps: []
+    requestRoutingRules: [
+      {
+        name: 'webAppRule'
+        //id: '${applicationGateways_cmh_bplus_loc_appgw_name_resource.id}/requestRoutingRules/webAppRule'
+        id: resourceId('Microsoft.Network/applicationGateways/requestRoutingRules', appGatewayName, 'webAppRule')
+        properties: {
+          ruleType: 'Basic'
+          priority: 1
+          httpListener: {
+            //id: '${applicationGateways_cmh_bplus_loc_appgw_name_resource.id}/httpListeners/publicHttps'
+            id: resourceId('Microsoft.Network/applicationGateways/httpListeners', appGatewayName, 'publicHttps')
+          }
+          backendAddressPool: {
+            //id: '${applicationGateways_cmh_bplus_loc_appgw_name_resource.id}/backendAddressPools/webAppBackendPool'
+            id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', appGatewayName, 'webAppBackendPool')
+          }
+          backendHttpSettings: {
+            //id: '${applicationGateways_cmh_bplus_loc_appgw_name_resource.id}/backendHttpSettingsCollection/backendHttpsSettings'
+            id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', appGatewayName, 'backendHttpsSettings')
+          }
+        }
+      }
+    ]
+    routingRules: []
+    probes: [
+      {
+        name: 'backendHttpsSettings22ef1a7b-18f6-4680-8469-dc2c9e0a009_'
+        //id: '${applicationGateways_cmh_bplus_loc_appgw_name_resource.id}/probes/backendHttpsSettings22ef1a7b-18f6-4680-8469-dc2c9e0a009_'
+        id: resourceId('Microsoft.Network/applicationGateways/probes', appGatewayName, 'backendHttpsSettings22ef1a7b-18f6-4680-8469-dc2c9e0a009_')
+        properties: {
+          protocol: 'Https'
+          path: '/'
+          interval: 30
+          timeout: 30
+          unhealthyThreshold: 3
+          pickHostNameFromBackendHttpSettings: true
+          minServers: 0
+          match: {}
+        }
+      }
+    ]
+    rewriteRuleSets: []
+    redirectConfigurations: []
+    privateLinkConfigurations: []
+    enableHttp2: true
+    autoscaleConfiguration: {
+      minCapacity: minInstances
+      maxCapacity: maxInstances
+    }
   }
 }
-
-output id string = appGw.id
-output name string = appGw.name
