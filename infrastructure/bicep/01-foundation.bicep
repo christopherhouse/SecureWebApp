@@ -1,9 +1,22 @@
+@description('The Azure region where resources will be created')
 param location string = resourceGroup().location
+
+@description('The subnet configuration for the virtual network, this parameter is a UDT.')
 param subnetConfiguration subnetConfigurationsType
+
+@description('The name of the virtual network where subnets and private endpoints will be created')
 param vnetName string
+
+@description('The name of the workload, used to generate resource names, in the form of [workloadName]-[environmentSuffix]-[resourceTypeAbbreviation]')
 param workloadName string
+
+@description('The environment suffix, representing the environment where resources will be deployed.  Used to generate resource names, in the form of [workloadName]-[environmentSuffix]-[resourceTypeAbbreviation]')
 param environmentSuffix string
+
+@description('The number of days to retain log data in the Log Analytics workspace')
 param logAnalyticsRetentionInDays int
+
+@description('The build ID, used to generate unique resource deployment names')
 param buildId string = substring(newGuid(), 0, 8)
 
 @export()
